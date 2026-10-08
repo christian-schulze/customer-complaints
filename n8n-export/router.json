@@ -1,0 +1,737 @@
+{
+  "updatedAt": "2026-10-08T23:17:12.000Z",
+  "createdAt": "2026-10-08T23:06:40.735Z",
+  "id": "lcuFTh9kerJUgkf2",
+  "name": "Router",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "id": "8b6bd649-a60d-479d-a3e6-e02e8c38258a",
+      "name": "Router Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "result",
+              "type": "object"
+            },
+            {
+              "name": "config",
+              "type": "object"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "54a1ba24-8483-403a-8c35-33428cb8290c",
+      "name": "Determine Route",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        250,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const item = $input.first().json;\nconst result = item.result || {};\nconst label = result.label;\nconst escalate = result.escalate === true;\n\n// FR-7.1: deterministic routing on label + escalate, not model judgment.\nlet routeIndex;\nif (label === 'legitimate' && !escalate) routeIndex = 0;\nelse if (label === 'legitimate' && escalate) routeIndex = 1;\nelse if (label === 'unknown') routeIndex = 2;\nelse if (label === 'not_legitimate' && escalate) routeIndex = 2;\nelse routeIndex = 3; // not_legitimate, not escalated\n\nreturn [{ json: { ...item, routeIndex } }];"
+      }
+    },
+    {
+      "id": "bfb8dc71-7501-4182-b144-297b804fdf82",
+      "name": "Route Switch",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        500,
+        0
+      ],
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 4,
+        "output": "={{ $json.routeIndex }}"
+      }
+    },
+    {
+      "id": "57f5ff99-6305-4bf4-87ea-230062d5a480",
+      "name": "Routing Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.6,
+      "position": [
+        750,
+        220
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "claude-sonnet-5",
+          "mode": "list",
+          "cachedResultName": "Claude Sonnet 5"
+        },
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "credentials": {
+        "anthropicApi": {
+          "id": "QkrzUs2JhJlBwMWH",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "id": "b48344de-7907-454f-8243-b52c144b20c5",
+      "name": "Routing Result Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        750,
+        340
+      ],
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"additionalProperties\": false,\n  \"required\": [\"category\", \"priority\", \"acknowledgementDraft\"],\n  \"properties\": {\n    \"category\": { \"type\": \"string\", \"enum\": [\"claims\", \"billing\", \"customer_service\", \"policy_admin\"] },\n    \"priority\": { \"type\": \"string\", \"enum\": [\"urgent\", \"standard\"] },\n    \"acknowledgementDraft\": { \"type\": \"string\" }\n  }\n}",
+        "autoFix": true
+      }
+    },
+    {
+      "id": "0beea344-669a-40d1-b895-33e4eefde4df",
+      "name": "Routing Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "onError": "continueErrorOutput",
+      "position": [
+        750,
+        0
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "=Classify and draft an acknowledgement for this complaint.\n\nComplaint details (JSON): {{ JSON.stringify({ summary: $json.result.summary, extracted: $json.result.extracted, customerTone: $json.result.customerTone, escalate: $json.result.escalate, escalationReason: $json.result.escalationReason, reasons: $json.result.reasons }) }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=You are the complaint routing assistant for {{ $json.config?.insurerName ?? 'ACME Insurance' }}. You are given one finished, confirmed-legitimate complaint. Respond ONLY with the required JSON fields — no other text, no markdown.\n\nCATEGORY (exactly one): \"claims\" (claim denied, delayed, or disputed), \"billing\" (premium or billing errors), \"customer_service\" (poor service or staff conduct), \"policy_admin\" (unexpected policy changes or other administrative matters). Choose based on what the complaint is actually about.\n\nPRIORITY (exactly one): \"urgent\" when the complaint involves financial hardship, a safety concern, vulnerability, or a long unresolved delay. \"standard\" otherwise. The complaint's escalate flag and escalationReason (if present) are strong signals for urgency, but judge from the full complaint, not that flag alone.\n\nACKNOWLEDGEMENT DRAFT (acknowledgementDraft): write a more formal message than a chat reply, for a human reviewer to check and send to the complainant. It must follow the same tone and content rules as every other customer-facing message in this system:\n- Tone, matched to the given customerTone:\n  - angry: calm, direct, acknowledge the frustration, never defensive.\n  - distressed: warm, unhurried, make clear a person will help.\n  - confused: clear, simple language, plainly explain what happens next.\n  - neutral: professional and concise.\n- Never, regardless of tone: promise or predict an outcome or payout; admit fault or liability; give legal advice; reveal any internal classification label (never say \"legitimate\", \"not legitimate\", or \"unknown\" as a verdict); mirror hostility back at the complainant.\n- This draft is stored with the complaint record for a human to review and send — it is not shown to the complainant directly."
+        }
+      }
+    },
+    {
+      "id": "84d11130-b3fa-430a-bb7a-ea715c59aa0f",
+      "name": "Finalize Legitimate Record",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        -100
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// The Agent node replaces $json with just { output: {...} } (or { error } on failure),\n// dropping the fields that went in — recover result/routeIndex from Route Switch's output.\nconst upstream = $('Route Switch').item.json;\nconst parsed = $input.first().json.output || {};\nconst result = upstream.result || {};\nconst routeIndex = upstream.routeIndex;\n\nconst referenceId = result.referenceId;\nconst timestamp = new Date().toISOString();\n\nconst registerRow = {\n  referenceId,\n  timestamp,\n  summary: result.summary || '',\n  extracted: JSON.stringify(result.extracted || {}),\n  category: parsed.category || '',\n  priority: parsed.priority || '',\n  customerTone: result.customerTone || '',\n  acknowledgementDraft: parsed.acknowledgementDraft || '',\n  escalated: result.escalate === true,\n};\n\n// Shaped for review_queue, used only if routeIndex === 1 (legitimate + escalated).\nconst reviewRow = {\n  referenceId,\n  timestamp,\n  label: 'legitimate',\n  reason: result.escalationReason || '',\n  summary: result.summary || '',\n  transcript: JSON.stringify(result.transcript || []),\n};\n\nconst routes = routeIndex === 1 ? ['complaints_register', 'review_queue'] : ['complaints_register'];\n\nreturn [{\n  json: {\n    registerRow,\n    reviewRow,\n    routeIndex,\n    referenceId,\n    category: parsed.category || null,\n    priority: parsed.priority || null,\n    routes,\n  },\n}];"
+      }
+    },
+    {
+      "id": "89c9ee90-35c1-49b0-8577-fa76a738ca10",
+      "name": "Routing Agent Failure",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        180
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// Same as Finalize Legitimate Record: the Agent's error output only carries { error },\n// so result must be recovered from Route Switch's output, not from $input.first().json.\nconst result = $('Route Switch').item.json.result || {};\nconst err = $input.first().json.error;\nconst message = (err && (err.message || err.description)) || 'unknown error';\nconst referenceId = result.referenceId;\nconst timestamp = new Date().toISOString();\n\n// Never fail silently: a routing-agent failure still reaches a human, via review_queue\n// rather than complaints_register (no category/priority/acknowledgementDraft to store).\nconst reviewRow = {\n  referenceId,\n  timestamp,\n  label: 'legitimate',\n  reason: 'routing agent failure: ' + message,\n  summary: result.summary || '',\n  transcript: JSON.stringify(result.transcript || []),\n};\n\nreturn [{\n  json: {\n    reviewRow,\n    routes: ['review_queue'],\n    referenceId,\n    category: null,\n    priority: null,\n  },\n}];"
+      }
+    },
+    {
+      "id": "bd114ffe-b5c3-4e85-b367-a32cafd89e17",
+      "name": "Write Complaints Register",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1250,
+        -100
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "mMEMGqB3jWfJe4iA",
+          "mode": "id"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "referenceId": "={{ $json.registerRow.referenceId }}",
+            "timestamp": "={{ $json.registerRow.timestamp }}",
+            "summary": "={{ $json.registerRow.summary }}",
+            "extracted": "={{ $json.registerRow.extracted }}",
+            "category": "={{ $json.registerRow.category }}",
+            "priority": "={{ $json.registerRow.priority }}",
+            "customerTone": "={{ $json.registerRow.customerTone }}",
+            "acknowledgementDraft": "={{ $json.registerRow.acknowledgementDraft }}",
+            "escalated": "={{ $json.registerRow.escalated }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "referenceId",
+              "displayName": "referenceId",
+              "type": "string",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true
+            },
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "type": "string",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "type": "string",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true
+            },
+            {
+              "id": "extracted",
+              "displayName": "extracted",
+              "type": "string",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true
+            },
+            {
+              "id": "category",
+              "displayName": "category",
+              "type": "string",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true
+            },
+            {
+              "id": "priority",
+              "displayName": "priority",
+              "type": "string",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true
+            },
+            {
+              "id": "customerTone",
+              "displayName": "customerTone",
+              "type": "string",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true
+            },
+            {
+              "id": "acknowledgementDraft",
+              "displayName": "acknowledgementDraft",
+              "type": "string",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true
+            },
+            {
+              "id": "escalated",
+              "displayName": "escalated",
+              "type": "boolean",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "2a2dba5f-b9cc-40ca-a0fb-d180e003e393",
+      "name": "Escalated Check",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1500,
+        -100
+      ],
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{ $('Finalize Legitimate Record').item.json.routeIndex === 1 ? 1 : 0 }}"
+      }
+    },
+    {
+      "id": "3f418ebd-7d10-4b52-afc3-639100b0af7e",
+      "name": "Build Review Queue Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        400
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const item = $input.first().json;\nconst result = item.result || {};\nconst referenceId = result.referenceId;\nconst timestamp = new Date().toISOString();\nconst reason = result.unknownReason || result.escalationReason || '';\n\nconst reviewRow = {\n  referenceId,\n  timestamp,\n  label: result.label,\n  reason,\n  summary: result.summary || '',\n  transcript: JSON.stringify(result.transcript || []),\n};\n\nreturn [{\n  json: {\n    reviewRow,\n    routes: ['review_queue'],\n    referenceId,\n    category: null,\n    priority: null,\n  },\n}];"
+      }
+    },
+    {
+      "id": "668e4763-3ba0-4876-8e65-334b8d518bf9",
+      "name": "Build Not Legitimate Log Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        600
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const item = $input.first().json;\nconst result = item.result || {};\nconst timestamp = new Date().toISOString();\n\nconst logRow = {\n  timestamp,\n  reasons: JSON.stringify(result.reasons || []),\n  summary: result.summary || '',\n};\n\nreturn [{\n  json: {\n    logRow,\n    routes: ['not_legitimate_log'],\n    referenceId: result.referenceId,\n    category: null,\n    priority: null,\n  },\n}];"
+      }
+    },
+    {
+      "id": "e4bacf1f-bbd7-4a18-9b8c-ab5423b29d68",
+      "name": "Prepare Review Queue Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1250,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// Data Table insert output only carries the inserted row's own columns, so a path that\n// goes through \"Write Complaints Register\" first (escalated legitimate) loses reviewRow.\n// Recover it from Finalize Legitimate Record in that case; otherwise it's already here.\nfunction tryNode(name) {\n  try {\n    const it = $(name).item;\n    return it ? it.json : null;\n  } catch (e) {\n    return null;\n  }\n}\n\nconst direct = $input.first().json;\nconst reviewRow = direct.reviewRow || (tryNode('Finalize Legitimate Record') || {}).reviewRow;\n\nreturn [{ json: { reviewRow } }];"
+      }
+    },
+    {
+      "id": "f32d83de-b07f-483c-98fd-2c83012462b4",
+      "name": "Write Review Queue",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1500,
+        300
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "ZVW4CiFnlbBwWTWZ",
+          "mode": "id"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "referenceId": "={{ $json.reviewRow.referenceId }}",
+            "timestamp": "={{ $json.reviewRow.timestamp }}",
+            "label": "={{ $json.reviewRow.label }}",
+            "reason": "={{ $json.reviewRow.reason }}",
+            "summary": "={{ $json.reviewRow.summary }}",
+            "transcript": "={{ $json.reviewRow.transcript }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "referenceId",
+              "displayName": "referenceId",
+              "type": "string",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true
+            },
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "type": "string",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true
+            },
+            {
+              "id": "label",
+              "displayName": "label",
+              "type": "string",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true
+            },
+            {
+              "id": "reason",
+              "displayName": "reason",
+              "type": "string",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "type": "string",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true
+            },
+            {
+              "id": "transcript",
+              "displayName": "transcript",
+              "type": "string",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "0f40e400-a68e-4260-88cb-f3bd0ebb7561",
+      "name": "Write Not Legitimate Log",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1250,
+        600
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "zyC9WzSyeEj9UVxc",
+          "mode": "id"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{ $json.logRow.timestamp }}",
+            "reasons": "={{ $json.logRow.reasons }}",
+            "summary": "={{ $json.logRow.summary }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "type": "string",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true
+            },
+            {
+              "id": "reasons",
+              "displayName": "reasons",
+              "type": "string",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "type": "string",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "3a41e82e-9c57-4c99-9124-ad3d532d821c",
+      "name": "Finalize Routing Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1750,
+        100
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// Data Table inserts strip any field that isn't one of the table's own columns, so recover\n// the routing metadata (referenceId, routes, category, priority) from whichever upstream\n// metadata-producing node actually ran on this execution path, not from $json.\nfunction tryNode(name) {\n  try {\n    const it = $(name).item;\n    return it ? it.json : null;\n  } catch (e) {\n    return null;\n  }\n}\n\nconst source =\n  tryNode('Finalize Legitimate Record') ||\n  tryNode('Routing Agent Failure') ||\n  tryNode('Build Review Queue Row') ||\n  tryNode('Build Not Legitimate Log Row');\n\nreturn [{\n  json: {\n    referenceId: source ? source.referenceId : null,\n    routes: source ? source.routes : [],\n    category: source ? source.category ?? null : null,\n    priority: source ? source.priority ?? null : null,\n  },\n}];"
+      }
+    }
+  ],
+  "connections": {
+    "Router Trigger": {
+      "main": [
+        [
+          {
+            "node": "Determine Route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Determine Route": {
+      "main": [
+        [
+          {
+            "node": "Route Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Switch": {
+      "main": [
+        [
+          {
+            "node": "Routing Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Routing Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Review Queue Row",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Not Legitimate Log Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Routing Agent": {
+      "main": [
+        [
+          {
+            "node": "Finalize Legitimate Record",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Routing Agent Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finalize Legitimate Record": {
+      "main": [
+        [
+          {
+            "node": "Write Complaints Register",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Complaints Register": {
+      "main": [
+        [
+          {
+            "node": "Escalated Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Escalated Check": {
+      "main": [
+        [
+          {
+            "node": "Finalize Routing Result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Review Queue Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Routing Agent Failure": {
+      "main": [
+        [
+          {
+            "node": "Prepare Review Queue Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Review Queue Row": {
+      "main": [
+        [
+          {
+            "node": "Prepare Review Queue Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Review Queue Row": {
+      "main": [
+        [
+          {
+            "node": "Write Review Queue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Review Queue": {
+      "main": [
+        [
+          {
+            "node": "Finalize Routing Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Not Legitimate Log Row": {
+      "main": [
+        [
+          {
+            "node": "Write Not Legitimate Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Not Legitimate Log": {
+      "main": [
+        [
+          {
+            "node": "Finalize Routing Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Routing Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Routing Result Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Routing Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Routing Result Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Routing Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": null,
+  "nodeGroups": [],
+  "pinData": null,
+  "versionId": "640b933a-93f1-49a8-be85-252985191ae6",
+  "activeVersionId": "640b933a-93f1-49a8-be85-252985191ae6",
+  "versionCounter": 3,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-10-08T23:06:40.737Z",
+      "createdAt": "2026-10-08T23:06:40.737Z",
+      "role": "workflow:owner",
+      "workflowId": "lcuFTh9kerJUgkf2",
+      "projectId": "ZoCl8PNtu0LdHnhV",
+      "project": {
+        "updatedAt": "2026-10-08T20:19:49.831Z",
+        "createdAt": "2026-10-08T20:12:22.259Z",
+        "id": "ZoCl8PNtu0LdHnhV",
+        "name": "Christian Schulze <christian.schulze@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "794656f1-8156-410a-8484-ee8271ffed61"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}

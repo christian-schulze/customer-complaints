@@ -6,6 +6,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+rm -rf n8n-export
 mkdir -p n8n-export
 
 docker compose exec -T n8n n8n export:workflow \

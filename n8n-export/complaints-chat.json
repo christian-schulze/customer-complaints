@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-08T21:12:41.605Z",
+  "updatedAt": "2026-10-08T23:20:34.825Z",
   "createdAt": "2026-10-08T21:05:41.484Z",
   "id": "3DTkBZ3xEmbu3ima",
   "name": "Complaints Chat",
@@ -150,6 +150,70 @@
         },
         "includeOtherFields": false
       }
+    },
+    {
+      "id": "f1a2b3c4-1111-4a2b-8c3d-9e0f1a2b3c4d",
+      "name": "Done Check",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        500,
+        250
+      ],
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{ $json.done ? 1 : 0 }}"
+      }
+    },
+    {
+      "id": "a2b3c4d5-2222-4b3c-9d4e-0f1a2b3c4d5e",
+      "name": "Call Router",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        750,
+        300
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "lcuFTh9kerJUgkf2",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "result": "={{ $json.result }}",
+            "config": "={{ { insurerName: $('Config').item.json.insurerName, products: $('Config').item.json.products, maxFollowUps: $('Config').item.json.maxFollowUps, confidenceThreshold: $('Config').item.json.confidenceThreshold } }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "result",
+              "displayName": "result",
+              "type": "object",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true
+            },
+            {
+              "id": "config",
+              "displayName": "config",
+              "type": "object",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      }
     }
   ],
   "connections": {
@@ -182,6 +246,23 @@
             "node": "Format Chat Response",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Done Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Done Check": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Call Router",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -194,9 +275,9 @@
   "meta": null,
   "nodeGroups": [],
   "pinData": null,
-  "versionId": "777b5741-f9cb-4300-a6a9-7dcd652e744d",
-  "activeVersionId": "777b5741-f9cb-4300-a6a9-7dcd652e744d",
-  "versionCounter": 2,
+  "versionId": "ec6cc2ce-85c9-42be-a93a-65588025458e",
+  "activeVersionId": "ec6cc2ce-85c9-42be-a93a-65588025458e",
+  "versionCounter": 3,
   "triggerCount": 1,
   "sourceWorkflowId": null,
   "tags": [],

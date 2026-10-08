@@ -2,7 +2,7 @@ import { workflow, node, links } from '@n8n-as-code/transformer';
 
 // <workflow-map>
 // Workflow : Complaints Chat
-// Nodes   : 4  |  Connections: 3
+// Nodes   : 6  |  Connections: 5
 //
 // NODE INDEX
 // ──────────────────────────────────────────────────────────────────
@@ -11,6 +11,8 @@ import { workflow, node, links } from '@n8n-as-code/transformer';
 // ChatTrigger                        chatTrigger
 // CallClassifierCore                 executeWorkflow
 // FormatChatResponse                 set
+// DoneCheck                          switch
+// CallRouter                         executeWorkflow
 //
 // ROUTING MAP
 // ──────────────────────────────────────────────────────────────────
@@ -18,6 +20,8 @@ import { workflow, node, links } from '@n8n-as-code/transformer';
 //    → Config
 //      → CallClassifierCore
 //        → FormatChatResponse
+//        → DoneCheck
+//         .out(1) → CallRouter
 // </workflow-map>
 
 // =====================================================================
@@ -27,7 +31,7 @@ import { workflow, node, links } from '@n8n-as-code/transformer';
 @workflow({
     id: '3DTkBZ3xEmbu3ima',
     name: 'Complaints Chat',
-    active: false,
+    active: true,
     isArchived: false,
     settings: { executionOrder: 'v1' },
 })
@@ -172,6 +176,66 @@ export class ComplaintsChatWorkflow {
         includeOtherFields: false,
     };
 
+    @node({
+        id: 'f1a2b3c4-1111-4a2b-8c3d-9e0f1a2b3c4d',
+        name: 'Done Check',
+        type: 'n8n-nodes-base.switch',
+        version: 3.4,
+        position: [500, 250],
+    })
+    DoneCheck = {
+        mode: 'expression',
+        numberOutputs: 2,
+        output: '={{ $json.done ? 1 : 0 }}',
+    };
+
+    @node({
+        id: 'a2b3c4d5-2222-4b3c-9d4e-0f1a2b3c4d5e',
+        name: 'Call Router',
+        type: 'n8n-nodes-base.executeWorkflow',
+        version: 1.3,
+        position: [750, 300],
+    })
+    CallRouter = {
+        source: 'database',
+        workflowId: {
+            __rl: true,
+            value: 'lcuFTh9kerJUgkf2',
+            mode: 'id',
+        },
+        workflowInputs: {
+            mappingMode: 'defineBelow',
+            value: {
+                result: '={{ $json.result }}',
+                config: "={{ { insurerName: $('Config').item.json.insurerName, products: $('Config').item.json.products, maxFollowUps: $('Config').item.json.maxFollowUps, confidenceThreshold: $('Config').item.json.confidenceThreshold } }}",
+            },
+            matchingColumns: [],
+            schema: [
+                {
+                    id: 'result',
+                    displayName: 'result',
+                    type: 'object',
+                    required: false,
+                    defaultMatch: false,
+                    canBeUsedToMatch: true,
+                    display: true,
+                },
+                {
+                    id: 'config',
+                    displayName: 'config',
+                    type: 'object',
+                    required: false,
+                    defaultMatch: false,
+                    canBeUsedToMatch: true,
+                    display: true,
+                },
+            ],
+        },
+        options: {
+            waitForSubWorkflow: false,
+        },
+    };
+
     // =====================================================================
     // ROUTAGE ET CONNEXIONS
     // =====================================================================
@@ -181,5 +245,7 @@ export class ComplaintsChatWorkflow {
         this.ChatTrigger.out(0).to(this.Config.in(0));
         this.Config.out(0).to(this.CallClassifierCore.in(0));
         this.CallClassifierCore.out(0).to(this.FormatChatResponse.in(0));
+        this.CallClassifierCore.out(0).to(this.DoneCheck.in(0));
+        this.DoneCheck.out(1).to(this.CallRouter.in(0));
     }
 }
