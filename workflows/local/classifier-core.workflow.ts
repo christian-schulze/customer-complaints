@@ -280,7 +280,9 @@ return [{
         language: 'javaScript',
         jsCode: `const item = $input.first().json;
 const parsed = item.output ?? item;
-const cfg = item.config || {};
+// The Agent node replaces $json with just { output: {...} } (or BuildFailureResult's own
+// shape), dropping the config that went in — recover it from the trigger, not from $input.
+const cfg = $('Classifier Core Trigger').item.json.config || {};
 const products = Array.isArray(cfg.products) ? cfg.products : ['motor', 'home', 'travel'];
 const threshold = typeof cfg.confidenceThreshold === 'number' ? cfg.confidenceThreshold : 0.7;
 
