@@ -1,0 +1,227 @@
+{
+  "updatedAt": "2026-10-08T21:12:41.605Z",
+  "createdAt": "2026-10-08T21:05:41.484Z",
+  "id": "3DTkBZ3xEmbu3ima",
+  "name": "Complaints Chat",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "id": "6f9f955b-8a19-4a09-9f39-2a18c9869280",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "insurerName",
+              "value": "ACME Insurance",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "products",
+              "value": "={{ [\"motor\", \"home\", \"travel\"] }}",
+              "type": "array"
+            },
+            {
+              "id": "3",
+              "name": "maxFollowUps",
+              "value": 3,
+              "type": "number"
+            },
+            {
+              "id": "4",
+              "name": "confidenceThreshold",
+              "value": 0.7,
+              "type": "number"
+            }
+          ]
+        },
+        "includeOtherFields": true
+      }
+    },
+    {
+      "id": "cfb5f7a7-d8d9-452e-bee2-39d18a34c7ec",
+      "name": "Chat Trigger",
+      "webhookId": "39340647-22f2-47e3-80b4-d4a944895fde",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -250,
+        0
+      ],
+      "parameters": {
+        "public": true,
+        "mode": "hostedChat",
+        "authentication": "none",
+        "options": {
+          "responseMode": "lastNode"
+        }
+      }
+    },
+    {
+      "id": "6a3b0eff-ab63-4685-bd01-801fd22d9d58",
+      "name": "Call Classifier Core",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        250,
+        0
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "Ka2qqZQ9mv8HbkcI",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "sessionId": "={{ $json.sessionId }}",
+            "message": "={{ $json.chatInput }}",
+            "config": "={{ { insurerName: $json.insurerName, products: $json.products, maxFollowUps: $json.maxFollowUps, confidenceThreshold: $json.confidenceThreshold } }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "type": "string",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "type": "string",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true
+            },
+            {
+              "id": "config",
+              "displayName": "config",
+              "type": "object",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "de205a98-4606-4d16-89d2-7ab0ee498b68",
+      "name": "Format Chat Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        500,
+        0
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "output",
+              "value": "={{ $json.reply }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": false
+      }
+    }
+  ],
+  "connections": {
+    "Chat Trigger": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Call Classifier Core",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Classifier Core": {
+      "main": [
+        [
+          {
+            "node": "Format Chat Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": null,
+  "nodeGroups": [],
+  "pinData": null,
+  "versionId": "777b5741-f9cb-4300-a6a9-7dcd652e744d",
+  "activeVersionId": "777b5741-f9cb-4300-a6a9-7dcd652e744d",
+  "versionCounter": 2,
+  "triggerCount": 1,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-10-08T21:05:41.486Z",
+      "createdAt": "2026-10-08T21:05:41.486Z",
+      "role": "workflow:owner",
+      "workflowId": "3DTkBZ3xEmbu3ima",
+      "projectId": "ZoCl8PNtu0LdHnhV",
+      "project": {
+        "updatedAt": "2026-10-08T20:19:49.831Z",
+        "createdAt": "2026-10-08T20:12:22.259Z",
+        "id": "ZoCl8PNtu0LdHnhV",
+        "name": "Christian Schulze <christian.schulze@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "794656f1-8156-410a-8484-ee8271ffed61"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}

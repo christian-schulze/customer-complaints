@@ -1,0 +1,9 @@
+node_modules/
+.env
+tests/reports/
+*.log
+.DS_Store
+
+# n8n-as-code local sync bookkeeping (push hashes/timestamps, machine-local)
+workflows/*/.n8n-state.json
+workflows/*/.n8n-sync-events.jsonl

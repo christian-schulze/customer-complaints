@@ -1,0 +1,58 @@
+schema: spec-driven
+
+# Project context (optional)
+# Add only constraints that should guide OpenSpec artifacts and workflows.
+# Include constraints an agent cannot infer by reading the code.
+# Keep general project documentation and discoverable codebase facts out.
+context: |
+  Behavioural source of truth is docs/PRD.md. If a design detail here would
+  imply changing the PRD, stop and ask Christian rather than deciding alone.
+
+  Technical decisions, settled, don't relitigate:
+  - Runtime agents are native n8n AI nodes (AI Agent + Anthropic Chat Model +
+    memory + Structured Output Parser). Not Claude Code at runtime. The chat
+    takes untrusted public input; classification is text-in/JSON-out with no
+    tools needed. Agents have no tools: no Execute Command node, no custom
+    Docker image.
+  - n8n-orchestrated: the workflow graph controls flow; LLMs only judge
+    inside nodes.
+  - Workflows as code via n8n-as-code (n8nac). workflows/local/*.workflow.ts
+    files are the source of truth; sync (pull/push) is explicit. Prompts live
+    inline in the workflow files.
+  - The classifier core is a sub-workflow called by both the chat workflow
+    and the test harness, so tests exercise exactly what users talk to.
+  - Records go in n8n Data Tables.
+  - Single environment: Local, Docker on Christian's Linux laptop,
+    http://localhost:5678. The separate n8n.cmonkey.me instance is not used
+    for this project.
+  - Spec-driven with OpenSpec: four coarse changes only (add-complaint-intake,
+    add-routing-and-records, add-test-suite, add-auto-bootstrap), each
+    proposed, reviewed by Christian, applied, tested, verified, archived,
+    then committed. See n8n-agent-pipeline-handoff.md §4 for the full loop.
+  - Never change a reviewed test case's expected outcome to make it pass;
+    flag it to Christian instead.
+  - No secrets in tracked files; env vars only. Test data is synthetic.
+  - Time budget is one working day (delivery end of 2026-10-09); build order
+    follows PRD §9 strictly, and risk to a must-have should be flagged early.
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always state what is out of scope
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
+
+# Per-operation guidance (optional)
+# Add advisory guidance for how apply and archive work should be conducted.
+# This is separate from artifact rules above.
+# Example:
+#   operations:
+#     apply:
+#       guidance:
+#         - Keep test summaries concise
+#     archive:
+#       guidance:
+#         - Summarize the archive outcome before finishing

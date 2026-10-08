@@ -1,0 +1,26 @@
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:2.42.5
+    restart: unless-stopped
+    # NOTE: bridge networking (ports:) fails on this host - docker can't create
+    # veth pairs ("operation not supported"), affecting every bridge network,
+    # not just this one. Using host networking as a workaround; N8N_LISTEN_ADDRESS
+    # keeps it bound to localhost only, preserving the original 127.0.0.1-only intent.
+    # If you fix the host's veth/bridge networking later, switch back to `ports:`.
+    network_mode: host
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_LISTEN_ADDRESS=127.0.0.1
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=Australia/Sydney
+      # Execution pruning: keep the local instance from growing unbounded.
+      - EXECUTIONS_DATA_PRUNE=true
+      - EXECUTIONS_DATA_MAX_AGE=336
+      - EXECUTIONS_DATA_PRUNE_MAX_COUNT=10000
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+volumes:
+  n8n_data:
