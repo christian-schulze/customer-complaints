@@ -2,7 +2,7 @@ import { workflow, node, links } from '@n8n-as-code/transformer';
 
 // <workflow-map>
 // Workflow : Complaints Chat
-// Nodes   : 6  |  Connections: 5
+// Nodes   : 7  |  Connections: 7
 //
 // NODE INDEX
 // ──────────────────────────────────────────────────────────────────
@@ -12,6 +12,7 @@ import { workflow, node, links } from '@n8n-as-code/transformer';
 // CallClassifierCore                 executeWorkflow
 // FormatChatResponse                 set
 // DoneCheck                          switch
+// Merge                              merge
 // CallRouter                         executeWorkflow
 //
 // ROUTING MAP
@@ -19,9 +20,11 @@ import { workflow, node, links } from '@n8n-as-code/transformer';
 // ChatTrigger
 //    → Config
 //      → CallClassifierCore
-//        → FormatChatResponse
 //        → DoneCheck
+//          → Merge
+//            → FormatChatResponse
 //         .out(1) → CallRouter
+//            → Merge.in(1) (↩ loop)
 // </workflow-map>
 
 // =====================================================================
@@ -29,11 +32,10 @@ import { workflow, node, links } from '@n8n-as-code/transformer';
 // =====================================================================
 
 @workflow({
-    id: '3DTkBZ3xEmbu3ima',
+    id: 's3dRuSXpeqfkOc9b',
     name: 'Complaints Chat',
     active: true,
     isArchived: false,
-    projectId: 'ZoCl8PNtu0LdHnhV',
     settings: { executionOrder: 'v1' },
 })
 export class ComplaintsChatWorkflow {
@@ -109,7 +111,7 @@ export class ComplaintsChatWorkflow {
         source: 'database',
         workflowId: {
             __rl: true,
-            value: 'Ka2qqZQ9mv8HbkcI',
+            value: 'A8GMGPnNhF1OvoDc',
             mode: 'id',
         },
         workflowInputs: {
@@ -191,6 +193,18 @@ export class ComplaintsChatWorkflow {
     };
 
     @node({
+        id: 'b3c4d5e6-3333-4c5d-9e6f-1a2b3c4d5e6f',
+        name: 'Merge',
+        type: 'n8n-nodes-base.merge',
+        version: 3.2,
+        position: [750, 0],
+    })
+    Merge = {
+        mode: 'append',
+        numberInputs: 2,
+    };
+
+    @node({
         id: 'a2b3c4d5-2222-4b3c-9d4e-0f1a2b3c4d5e',
         name: 'Call Router',
         type: 'n8n-nodes-base.executeWorkflow',
@@ -201,7 +215,7 @@ export class ComplaintsChatWorkflow {
         source: 'database',
         workflowId: {
             __rl: true,
-            value: 'lcuFTh9kerJUgkf2',
+            value: 'WBW8FQYwsXaRubtU',
             mode: 'id',
         },
         workflowInputs: {
@@ -245,8 +259,10 @@ export class ComplaintsChatWorkflow {
     defineRouting() {
         this.ChatTrigger.out(0).to(this.Config.in(0));
         this.Config.out(0).to(this.CallClassifierCore.in(0));
-        this.CallClassifierCore.out(0).to(this.FormatChatResponse.in(0));
         this.CallClassifierCore.out(0).to(this.DoneCheck.in(0));
+        this.DoneCheck.out(0).to(this.Merge.in(0));
         this.DoneCheck.out(1).to(this.CallRouter.in(0));
+        this.CallRouter.out(0).to(this.Merge.in(1));
+        this.Merge.out(0).to(this.FormatChatResponse.in(0));
     }
 }
