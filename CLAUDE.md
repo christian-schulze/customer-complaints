@@ -72,3 +72,20 @@ These cost real debugging time once; they shouldn't cost it twice.
   not a separate `If` node checking a parser-failure flag — a parser failure
   surfaces as the Agent node's own error, so routing its error output
   (index 1) to a fixed, non-LLM fallback branch is one node fewer.
+- **A hardcoded Execute Workflow `workflowId.value` never survives the
+  referenced workflow being recreated** — n8n has no way for a caller to
+  choose a workflow's ID on creation, whether via `n8nac push`'s
+  create-fallback or n8n's own JSON import, so a fresh `classifier-core` or
+  `router` always gets a brand-new ID the hardcoded reference in
+  `chat.workflow.ts`/`test-harness.workflow.ts` doesn't know about.
+  Reproduced live, twice, by deleting all four workflows and reloading from
+  scratch: activating `chat` or `test-harness` failed with "references
+  workflow X which is not published" until the stale ID was corrected.
+  `scripts/deploy-workflows.sh` now resolves `classifier-core`'s/`router`'s
+  current ID by name and corrects the two references via a direct API
+  update after every load — run it once after loading or reloading the four
+  workflows by any method. It deliberately never writes the resolved ID back
+  into tracked `.workflow.ts` source (that was tried and reverted for
+  causing permanent git diff churn on every reset); see
+  `openspec/changes/fix-workflow-id-portability/design.md` for the full
+  rationale.

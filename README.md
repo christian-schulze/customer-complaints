@@ -52,15 +52,12 @@ There's no automated bootstrap (`add-auto-bootstrap` was the lowest-priority, ex
 2. **Copy `.env.example` to `.env`** and fill in `ANTHROPIC_API_KEY` and a random value for `TEST_WEBHOOK_SECRET` (e.g. `openssl rand -hex 24`). Leave `N8N_API_KEY` for the next step.
 3. **Create an n8n API key**: Settings → API, create a key, paste it into `.env` as `N8N_API_KEY`.
 4. **Create the Anthropic credential** in the n8n UI (Credentials → New → Anthropic), using your API key.
-5. **Import the four workflows** from `n8n-export/*.json` (n8n UI → Import from File, one at a time, or `Workflows` → `Import`).
-6. **Reattach credentials on the imported workflows** — n8n never exports credential secrets, so each imported AI model node (`classifier-core`'s Claude Model, `router`'s Routing Model) needs the Anthropic credential from step 4 reselected, and `test-harness`'s Webhook node needs a header-auth credential (see next step).
-7. **Create the test-harness webhook credential**: `./scripts/create-test-credential.sh` (reads `TEST_WEBHOOK_SECRET` from `.env`, creates an `httpHeaderAuth` credential via the n8n API). Reselect it on `test-harness`'s Webhook node if the import didn't carry the reference.
-8. **Create the three Data Tables**: `./scripts/create-tables.sh` (idempotent — safe to re-run).
-9. **Add the `not_legitimate_log` referenceId column**: `./scripts/add-not-legitimate-log-reference-id.sh` (idempotent; see "Design decisions" for why this exists).
-10. **Activate all four workflows** in the n8n UI (toggle each to Active).
-11. **Try it**: open `chat.workflow.ts`'s hosted chat URL (Chat Trigger node → "Chat URL") and describe a complaint.
-
-If you have `n8nac` configured against this instance instead of importing JSON, `npx n8nac push <file>.workflow.ts --verify` for each file is equivalent to steps 5–6 and keeps credential references intact.
+5. **Load the four workflows**: `npx n8nac push <file>.workflow.ts --verify` for each of the four files in `workflows/local/` (keeps credential references intact). This is the only load path — `workflows/local/*.workflow.ts` is this project's source of truth; `n8n-export/*.json` is a generated export artifact, not something to import.
+6. **Create the test-harness webhook credential**: `./scripts/create-test-credential.sh` (reads `TEST_WEBHOOK_SECRET` from `.env`, creates an `httpHeaderAuth` credential via the n8n API; idempotent).
+7. **Create the three Data Tables**: `./scripts/create-tables.sh` (idempotent — safe to re-run).
+8. **Add the `not_legitimate_log` referenceId column**: `./scripts/add-not-legitimate-log-reference-id.sh` (idempotent; see "Design decisions" for why this exists).
+9. **Wire up cross-workflow references and activate**: `./scripts/deploy-workflows.sh`. `chat`'s and `test-harness`'s Execute Workflow nodes hardcode `classifier-core`'s/`router`'s workflow ID, and n8n never lets a freshly-created workflow keep a chosen ID (see the `CLAUDE.md` gotcha), so after a fresh load those references always point at the wrong workflow until this runs. The script resolves the real IDs by name, corrects the two references via the n8n API, checks the credentials from steps 4 and 6 exist, and activates all four in dependency order — all without touching any git-tracked `.workflow.ts` file. Safe to re-run any time (e.g. after wiping and reloading the workflows again).
+10. **Try it**: open `chat.workflow.ts`'s hosted chat URL (Chat Trigger node → "Chat URL") and describe a complaint.
 
 ## Running the tests
 
@@ -113,4 +110,4 @@ Because tests exercise the real classifier and router, including real Data Table
 
 ## How it was built
 
-`docs/PRD.md` (requirements, priorities, test criteria) → four OpenSpec changes, each proposed, reviewed, applied, live-tested, verified, and archived in turn (`openspec/changes/archive/`, specs synced into `openspec/specs/`) → workflows written as code with n8n-as-code (`workflows/local/*.workflow.ts`, source of truth; `n8n-export/*.json` is a generated convenience for reviewers who don't want to set up n8nac) → this test suite, built against the real running pipeline rather than a mock. `n8n-agent-pipeline-handoff.md` has the full process and technical-decisions writeup this project followed.
+`docs/PRD.md` (requirements, priorities, test criteria) → four OpenSpec changes, each proposed, reviewed, applied, live-tested, verified, and archived in turn (`openspec/changes/archive/`, specs synced into `openspec/specs/`) → workflows written as code with n8n-as-code (`workflows/local/*.workflow.ts`, source of truth; `n8n-export/*.json` is a generated export artifact for inspecting the JSON, not an import path) → this test suite, built against the real running pipeline rather than a mock. `n8n-agent-pipeline-handoff.md` has the full process and technical-decisions writeup this project followed.

@@ -1,0 +1,26 @@
+# Tasks
+
+## 1. Deploy-correction script
+
+- [x] 1.1 Write `scripts/deploy-workflows.sh`: resolve `classifier-core`'s and `router`'s current workflow IDs from the live n8n instance by name (via the n8n REST API), fetch `chat`'s and `test-harness`'s current full workflow definitions, update only the two Execute Workflow nodes' `workflowId.value` fields in memory to match, and write each definition back via the n8n API (design.md Decision 1). Verify by running it against the current Local instance and confirming, via a follow-up API read, that both `chat`'s and `test-harness`'s Execute Workflow nodes resolve to `classifier-core`'s and `router`'s actual current IDs.
+- [x] 1.2 Add dependency-ordered activation to the same script: activate `classifier-core` and `router`, then `chat` and `test-harness` (design.md Decision 2). Verify by running the script end-to-end against an instance where none of the four are active and confirming all four report active afterward, with no "references workflow X which is not published" error.
+- [x] 1.3 Add the credential-presence check (design.md Decision 4): before activating, confirm the Anthropic credential and the test-harness webhook credential exist on the instance by name, and fail with a clear message naming the missing credential and the workflow that needs it if not. Verify by pointing the check's lookup at a credential name that does not exist on the instance (without removing any real credential) and confirming the script fails with that clear message rather than proceeding.
+- [x] 1.4 Confirm idempotency: run the script twice in a row against an instance already in the correct end state. Verify by confirming the second run makes no changes (same four workflow IDs before and after, no duplicate workflows created, exit 0).
+
+## 2. Validation against tracked source and real behavior
+
+- [x] 2.1 After the API-level node-parameter update in 1.1, run `npx n8nac verify <id>` against `chat` and `test-harness` as part of the script. Verify by confirming the script's own output shows a clean verify result (no schema errors) for both.
+- [x] 2.2 Full fresh-instance rehearsal: delete all four workflows from the Local instance, reload them with `npx n8nac push <file>.workflow.ts --verify` for each of the four `workflows/local/*.workflow.ts` files (design.md Decision 3 - this is the only load path), run `scripts/deploy-workflows.sh`, then run `npm test -- --case legit-angry-billing` (or another known-good reviewed case). Verify by the actual command output showing `Result: PASS` and exit 0, then run `npm run test:cleanup` to remove the rows it wrote.
+- [x] 2.3 Confirm `scripts/deploy-workflows.sh` itself leaves tracked source untouched. Verify by snapshotting `git diff workflows/local/` immediately before running the script (against an already-loaded instance) and again immediately after, and confirming the two are identical. (Running `n8nac push` as part of 2.2 is expected to touch `workflows/local/*.workflow.ts`'s own `id`/`active` fields per design.md's Context/Risks - that diff is discarded before committing, same as the existing `n8nac pull` convention; it is not evidence against this task, which is scoped to the correction script's own effect.)
+
+## 3. Documentation
+
+- [x] 3.1 Rewrite the README's Quick Start workflow-loading and activation steps: load the four workflows with `npx n8nac push <file>.workflow.ts --verify` for each of the four `workflows/local/*.workflow.ts` files - the only documented load path - then run `./scripts/deploy-workflows.sh` once. Remove the old "import from `n8n-export/*.json`" step and its paired "reattach credentials on the imported workflows" step entirely; they are not kept as a fallback (design.md Decision 3). Also fix the pre-existing process-summary line elsewhere in the README that calls `n8n-export/*.json` "a generated convenience for reviewers who don't want to set up n8nac" - reword it to describe the file as a generated export artifact only. Verify by reading the rewritten sections through as if following them on a genuinely fresh instance and confirming every referenced command and script exists, matches what group 1 actually built, and contains no remaining reference to importing JSON.
+- [x] 3.2 Add a `CLAUDE.md` known-gotcha entry: hardcoded Execute Workflow references don't survive fresh workflow creation because n8n never lets a caller choose a new workflow's ID, and `scripts/deploy-workflows.sh` now resolves and corrects this after every load. Verify by reading it alongside the existing gotcha entries and confirming it matches their format (bold lead sentence, concrete evidence, what to do about it).
+- [x] 3.3 Regenerate `n8n-export/*.json` via `scripts/export.sh` to match the Local instance's final state after 2.2. Verify by `git status --short n8n-export/` showing the expected changes (or none, if content is already current).
+
+## Workflow follow-up
+
+- Run the full `npm test` reviewed suite once more as the final TR-5 confirmation before archiving, and run `npm run test:cleanup` afterward.
+- Get Christian's review of the diff before committing (per this repo's established practice).
+- Archive this change once Christian approves and it's committed.

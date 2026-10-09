@@ -1,7 +1,7 @@
 {
-  "updatedAt": "2026-10-08T23:20:34.825Z",
-  "createdAt": "2026-10-08T21:05:41.484Z",
-  "id": "3DTkBZ3xEmbu3ima",
+  "updatedAt": "2026-10-09T04:27:53.559Z",
+  "createdAt": "2026-10-09T04:27:32.575Z",
+  "id": "s3dRuSXpeqfkOc9b",
   "name": "Complaints Chat",
   "description": null,
   "active": true,
@@ -81,7 +81,7 @@
         "source": "database",
         "workflowId": {
           "__rl": true,
-          "value": "Ka2qqZQ9mv8HbkcI",
+          "value": "A8GMGPnNhF1OvoDc",
           "mode": "id"
         },
         "workflowInputs": {
@@ -179,7 +179,7 @@
         "source": "database",
         "workflowId": {
           "__rl": true,
-          "value": "lcuFTh9kerJUgkf2",
+          "value": "WBW8FQYwsXaRubtU",
           "mode": "id"
         },
         "workflowInputs": {
@@ -275,18 +275,18 @@
   "meta": null,
   "nodeGroups": [],
   "pinData": null,
-  "versionId": "ec6cc2ce-85c9-42be-a93a-65588025458e",
-  "activeVersionId": "ec6cc2ce-85c9-42be-a93a-65588025458e",
-  "versionCounter": 3,
+  "versionId": "c5eb1b85-bddc-4ab5-86f5-6e449e971875",
+  "activeVersionId": "c5eb1b85-bddc-4ab5-86f5-6e449e971875",
+  "versionCounter": 2,
   "triggerCount": 1,
   "sourceWorkflowId": null,
   "tags": [],
   "shared": [
     {
-      "updatedAt": "2026-10-08T21:05:41.486Z",
-      "createdAt": "2026-10-08T21:05:41.486Z",
+      "updatedAt": "2026-10-09T04:27:32.576Z",
+      "createdAt": "2026-10-09T04:27:32.576Z",
       "role": "workflow:owner",
-      "workflowId": "3DTkBZ3xEmbu3ima",
+      "workflowId": "s3dRuSXpeqfkOc9b",
       "projectId": "ZoCl8PNtu0LdHnhV",
       "project": {
         "updatedAt": "2026-10-08T20:19:49.831Z",

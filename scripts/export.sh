@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# Exports all project workflows from the Local n8n instance as importable JSON
-# into n8n-export/, for reviewers who don't want to run n8n-as-code.
+# Exports all project workflows from the Local n8n instance as JSON into
+# n8n-export/, a generated export artifact for inspecting the workflows'
+# current state - not an import path; workflows/local/*.workflow.ts via
+# n8nac push is the only way to load them onto an instance.
 # Run before every commit that changes workflows.
 set -euo pipefail
 
