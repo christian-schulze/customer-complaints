@@ -19,7 +19,7 @@
 
 ## 4. Commit
 
-- [ ] 4.1 Commit the updated `chat.workflow.ts` and this change's artifacts together, after Christian's review per `CLAUDE.md`. Verify by `git log` showing the commit and `git status` clean.
+- [x] 4.1 Commit the updated `chat.workflow.ts` and this change's artifacts together, after Christian's review per `CLAUDE.md`. Verify by `git log` showing the commit and `git status` clean. Done: commit `7625361`.
 
 ## Workflow follow-up
 
