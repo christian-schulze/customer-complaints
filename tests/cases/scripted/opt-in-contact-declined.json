@@ -1,0 +1,16 @@
+{
+  "id": "opt-in-contact-declined",
+  "description": "Provides all required fields up front, then declines the opt-in contact-details offer when asked. Covers FR-2.3: contact details are opt-in, declining is accepted without being asked again.",
+  "turns": [
+    "This is about my travel insurance. Last month my flight was cancelled by the airline and the insurer refused to reimburse my prepaid hotel costs, even though that's covered under my policy. I want a refund for the hotel costs.",
+    "No thanks, I'd rather not share my contact details.",
+    "No, I don't have a policy number either."
+  ],
+  "expected": {
+    "label": "legitimate",
+    "escalate": false,
+    "routes": ["complaints_register"]
+  },
+  "tags": ["opt-in", "contact-declined", "legitimate"],
+  "reviewed": true
+}

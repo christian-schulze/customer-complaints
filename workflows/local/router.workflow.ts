@@ -60,6 +60,7 @@ import { workflow, node, links } from '@n8n-as-code/transformer';
     name: 'Router',
     active: true,
     isArchived: false,
+    projectId: 'ZoCl8PNtu0LdHnhV',
     settings: { executionOrder: 'v1' },
 })
 export class RouterWorkflow {
@@ -629,6 +630,7 @@ return [{ json: { reviewRow } }];`,
                 timestamp: '={{ $json.logRow.timestamp }}',
                 reasons: '={{ $json.logRow.reasons }}',
                 summary: '={{ $json.logRow.summary }}',
+                referenceId: '={{ $json.referenceId }}',
             },
             matchingColumns: [],
             schema: [
@@ -653,6 +655,15 @@ return [{ json: { reviewRow } }];`,
                 {
                     id: 'summary',
                     displayName: 'summary',
+                    type: 'string',
+                    required: false,
+                    defaultMatch: false,
+                    canBeUsedToMatch: true,
+                    display: true,
+                },
+                {
+                    id: 'referenceId',
+                    displayName: 'referenceId',
                     type: 'string',
                     required: false,
                     defaultMatch: false,

@@ -1,0 +1,14 @@
+{
+  "id": "product-not-offered",
+  "description": "An otherwise well-formed complaint about a product the insurer doesn't offer (life insurance; default config products are motor/home/travel), with a bereavement mention. Covers FR-3.3 (deterministic 'product not offered' override to not_legitimate) and, since bereavement is an escalation trigger independent of label, the not_legitimate+escalated routing branch (review_queue, not the not-legitimate log).",
+  "turns": [
+    "This is about my life insurance policy. My claim was denied last month after a family member passed away, and I want an explanation and for it to be reconsidered."
+  ],
+  "expected": {
+    "label": "not_legitimate",
+    "escalate": true,
+    "routes": ["review_queue"]
+  },
+  "tags": ["product-not-offered", "not_legitimate"],
+  "reviewed": true
+}

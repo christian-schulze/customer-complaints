@@ -1,0 +1,14 @@
+{
+  "id": "notlegit-quote-request",
+  "description": "General enquiry / quote request, not a complaint. Covers: label=not_legitimate, route=not_legitimate_log only.",
+  "turns": [
+    "Hi, can you give me a quote for travel insurance for a trip to Japan next month?"
+  ],
+  "expected": {
+    "label": "not_legitimate",
+    "escalate": false,
+    "routes": ["not_legitimate_log"]
+  },
+  "tags": ["label", "not_legitimate", "route"],
+  "reviewed": true
+}

@@ -1,0 +1,18 @@
+{
+  "id": "followup-limit-unknown",
+  "description": "Stays vague across the default follow-up limit (maxFollowUps: 3) without giving the required fields. Covers FR-2.4: after the follow-up limit, the agent classifies with what it has rather than asking indefinitely. Covers: label=unknown, unknownReason=insufficient_info, the follow-up-limit-reached edge case, route=review_queue.",
+  "turns": [
+    "I have a problem with you guys.",
+    "It's something to do with insurance, I think.",
+    "I'm not really sure, something went wrong a while back.",
+    "I don't remember the details, I just want it sorted out.",
+    "I really don't know what else to tell you."
+  ],
+  "expected": {
+    "label": "unknown",
+    "unknownReason": "insufficient_info",
+    "routes": ["review_queue"]
+  },
+  "tags": ["label", "unknown", "follow-up-limit"],
+  "reviewed": true
+}

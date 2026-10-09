@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-08T23:17:12.000Z",
+  "updatedAt": "2026-10-09T00:42:19.810Z",
   "createdAt": "2026-10-08T23:06:40.735Z",
   "id": "lcuFTh9kerJUgkf2",
   "name": "Router",
@@ -439,7 +439,8 @@
           "value": {
             "timestamp": "={{ $json.logRow.timestamp }}",
             "reasons": "={{ $json.logRow.reasons }}",
-            "summary": "={{ $json.logRow.summary }}"
+            "summary": "={{ $json.logRow.summary }}",
+            "referenceId": "={{ $json.referenceId }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -464,6 +465,15 @@
             {
               "id": "summary",
               "displayName": "summary",
+              "type": "string",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true
+            },
+            {
+              "id": "referenceId",
+              "displayName": "referenceId",
               "type": "string",
               "required": false,
               "defaultMatch": false,
@@ -704,9 +714,9 @@
   "meta": null,
   "nodeGroups": [],
   "pinData": null,
-  "versionId": "640b933a-93f1-49a8-be85-252985191ae6",
-  "activeVersionId": "640b933a-93f1-49a8-be85-252985191ae6",
-  "versionCounter": 3,
+  "versionId": "dc2c5fd2-970c-4c82-aad7-c8dc1f1a0809",
+  "activeVersionId": "dc2c5fd2-970c-4c82-aad7-c8dc1f1a0809",
+  "versionCounter": 4,
   "triggerCount": 0,
   "sourceWorkflowId": null,
   "tags": [],

@@ -1,0 +1,14 @@
+{
+  "id": "notlegit-escalated-threat",
+  "description": "Abuse with no actual grievance stated, combined with a threat toward staff. Covers: escalation independent of label (not_legitimate + escalated), route=review_queue reached via the not_legitimate+escalated Switch branch (distinct from the unknown branch).",
+  "turns": [
+    "Your company is a joke and everyone who works there is pathetic. If I ever run into one of your staff in person I will make them regret it."
+  ],
+  "expected": {
+    "label": "not_legitimate",
+    "escalate": true,
+    "routes": ["review_queue"]
+  },
+  "tags": ["escalation", "not_legitimate", "route"],
+  "reviewed": true
+}

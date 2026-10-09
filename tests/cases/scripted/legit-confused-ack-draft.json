@@ -1,0 +1,17 @@
+{
+  "id": "legit-confused-ack-draft",
+  "description": "A second, distinct legitimate+confused-tone complaint, specifically to check the routing agent's acknowledgementDraft independently of the classifier's own closing message (per the Change 2 coverage gap: the two prompts could drift in tone handling independently of each other). Covers: category=policy_admin, a different complaint shape than legit-confused-customer-service.json.",
+  "turns": [
+    "Sorry, I'm a bit lost here - I got a letter last week saying my home policy changed somehow, something about my coverage amount going down, but I don't understand why or what it means for me. Nobody explained it. I'd like someone to explain what changed and why, since I didn't agree to anything.",
+    "No policy number, and I'd rather not leave contact details."
+  ],
+  "expected": {
+    "label": "legitimate",
+    "escalate": false,
+    "customerTone": "confused",
+    "routes": ["complaints_register"],
+    "category": "policy_admin"
+  },
+  "tags": ["label", "legitimate", "tone", "confused", "ack-draft"],
+  "reviewed": true
+}

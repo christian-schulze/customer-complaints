@@ -1,0 +1,14 @@
+{
+  "name": "customer-complaints",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "tsx tests/runner/index.ts",
+    "test:cleanup": "tsx tests/runner/cleanup.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

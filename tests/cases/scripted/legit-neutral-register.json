@@ -1,0 +1,16 @@
+{
+  "id": "legit-neutral-register",
+  "description": "Straightforward legitimate claim-denial complaint, neutral tone, no escalation triggers. Covers: label=legitimate, customerTone=neutral, route=complaints_register only, category=claims.",
+  "turns": [
+    "This is about my motor insurance policy. Last week my car was damaged in a hailstorm and I filed a claim, but it was denied without explanation. I'd like an explanation and for the claim to be reconsidered. I don't have my policy number handy, and I'd rather not leave contact details."
+  ],
+  "expected": {
+    "label": "legitimate",
+    "escalate": false,
+    "customerTone": "neutral",
+    "routes": ["complaints_register"],
+    "category": "claims"
+  },
+  "tags": ["label", "legitimate", "tone", "neutral", "route"],
+  "reviewed": true
+}

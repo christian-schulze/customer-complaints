@@ -1,0 +1,17 @@
+{
+  "id": "legit-confused-customer-service",
+  "description": "Legitimate complaint about poor staff conduct, written in an uncertain/confused way. Covers: customerTone=confused on the classifier's own closing message, category=customer_service. Distinct conversation from legit-confused-ack-draft.json, which separately covers the routing agent's acknowledgement draft.",
+  "turns": [
+    "I called about my travel insurance two weeks ago, and the person on the phone was rude and talked over me the whole time, and I didn't get a clear answer about anything. Sorry, I'm just a bit confused about what's going on here - can you explain simply what happens next and get someone to acknowledge the call wasn't handled properly?",
+    "No policy number, and I'd rather stay anonymous, thanks."
+  ],
+  "expected": {
+    "label": "legitimate",
+    "escalate": false,
+    "customerTone": "confused",
+    "routes": ["complaints_register"],
+    "category": "customer_service"
+  },
+  "tags": ["label", "legitimate", "tone", "confused"],
+  "reviewed": true
+}

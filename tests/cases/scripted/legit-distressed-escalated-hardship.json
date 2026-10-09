@@ -1,0 +1,17 @@
+{
+  "id": "legit-distressed-escalated-hardship",
+  "description": "Legitimate claim-denial complaint with financial hardship, distressed tone. Covers: escalation independent of label (legitimate + escalated), customerTone=distressed, route=complaints_register+review_queue, priority=urgent.",
+  "turns": [
+    "My home insurance claim for storm damage was denied last week, without any explanation. I'm now in serious financial trouble because of it, I can't afford the repairs and I'm falling behind on other bills. I just want someone to explain the decision and look at reconsidering the claim. I don't have a policy number on hand, and I'd rather not share contact details right now."
+  ],
+  "expected": {
+    "label": "legitimate",
+    "escalate": true,
+    "customerTone": "distressed",
+    "routes": ["complaints_register", "review_queue"],
+    "category": "claims",
+    "priority": "urgent"
+  },
+  "tags": ["label", "legitimate", "escalation", "tone", "distressed", "route", "priority"],
+  "reviewed": true
+}

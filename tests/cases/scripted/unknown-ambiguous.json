@@ -1,0 +1,13 @@
+{
+  "id": "unknown-ambiguous",
+  "description": "Mixed, self-undermining signal (complainant isn't sure if they're joking) then refuses to clarify. Covers: label=unknown. Live iteration (5 attempts) found genuinely ambiguous-by-design content is a coin-flip between unknownReason 'ambiguous' and 'insufficient_info' even for a careful human reader, so unknownReason is deliberately not pinned here - only the behavioural property that matters is asserted: the agent lands on unknown rather than forcing legitimate/not_legitimate on unclear input.",
+  "turns": [
+    "honestly idk if this is even real or if I'm just messing with you, but like, maybe something's wrong with my account or a claim or whatever, who knows, this could just be a joke tbh",
+    "I'm not saying anything else, figure it out yourselves or don't, I don't even know if I care."
+  ],
+  "expected": {
+    "label": "unknown"
+  },
+  "tags": ["label", "unknown"],
+  "reviewed": true
+}

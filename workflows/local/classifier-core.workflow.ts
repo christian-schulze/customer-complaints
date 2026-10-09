@@ -37,6 +37,7 @@ import { workflow, node, links } from '@n8n-as-code/transformer';
     name: 'Classifier Core',
     active: true,
     isArchived: false,
+    projectId: 'ZoCl8PNtu0LdHnhV',
     settings: { executionOrder: 'v1' },
 })
 export class ClassifierCoreWorkflow {

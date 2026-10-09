@@ -1,27 +1,27 @@
 import { workflow, node, links } from '@n8n-as-code/transformer';
 
 // <workflow-map>
-// Workflow : Complaints Chat
+// Workflow : Test Harness
 // Nodes   : 6  |  Connections: 5
 //
 // NODE INDEX
 // ──────────────────────────────────────────────────────────────────
 // Property name                    Node type (short)         Flags
+// Webhook                            webhook                    [creds]
 // Config                             set
-// ChatTrigger                        chatTrigger
 // CallClassifierCore                 executeWorkflow
-// FormatChatResponse                 set
 // DoneCheck                          switch
 // CallRouter                         executeWorkflow
+// FinalizeHarnessResponse            code
 //
 // ROUTING MAP
 // ──────────────────────────────────────────────────────────────────
-// ChatTrigger
+// Webhook
 //    → Config
 //      → CallClassifierCore
-//        → FormatChatResponse
 //        → DoneCheck
 //         .out(1) → CallRouter
+//            → FinalizeHarnessResponse
 // </workflow-map>
 
 // =====================================================================
@@ -29,20 +29,37 @@ import { workflow, node, links } from '@n8n-as-code/transformer';
 // =====================================================================
 
 @workflow({
-    id: '3DTkBZ3xEmbu3ima',
-    name: 'Complaints Chat',
+    id: 'Jh40d9BY4nitlVAx',
+    name: 'Test Harness',
     active: true,
     isArchived: false,
     projectId: 'ZoCl8PNtu0LdHnhV',
     settings: { executionOrder: 'v1' },
 })
-export class ComplaintsChatWorkflow {
+export class TestHarnessWorkflow {
     // =====================================================================
     // CONFIGURATION DES NOEUDS
     // =====================================================================
 
     @node({
-        id: '6f9f955b-8a19-4a09-9f39-2a18c9869280',
+        id: '98881c5b-d91d-4648-8e36-e54b8b322e64',
+        webhookId: '4f3ab191-36d4-4250-9fec-d7e9e62db068',
+        name: 'Webhook',
+        type: 'n8n-nodes-base.webhook',
+        version: 2.1,
+        position: [-250, 0],
+        credentials: { httpHeaderAuth: { id: 'uzIlBcfZyKG2AMDU', name: 'Test Harness Webhook Secret' } },
+    })
+    Webhook = {
+        httpMethod: 'POST',
+        path: 'test-harness',
+        authentication: 'headerAuth',
+        responseMode: 'lastNode',
+        responseData: 'firstEntryJson',
+    };
+
+    @node({
+        id: '32a27c5a-d616-468b-9dee-23fd8163a7f5',
         name: 'Config',
         type: 'n8n-nodes-base.set',
         version: 3.5,
@@ -54,52 +71,47 @@ export class ComplaintsChatWorkflow {
             assignments: [
                 {
                     id: '1',
-                    name: 'insurerName',
-                    value: 'ACME Insurance',
+                    name: 'sessionId',
+                    value: '={{ $json.body.sessionId }}',
                     type: 'string',
                 },
                 {
                     id: '2',
-                    name: 'products',
-                    value: '={{ ["motor", "home", "travel"] }}',
-                    type: 'array',
+                    name: 'message',
+                    value: '={{ $json.body.message }}',
+                    type: 'string',
                 },
                 {
                     id: '3',
-                    name: 'maxFollowUps',
-                    value: 3,
-                    type: 'number',
+                    name: 'insurerName',
+                    value: "={{ $json.body.config?.insurerName ?? 'ACME Insurance' }}",
+                    type: 'string',
                 },
                 {
                     id: '4',
+                    name: 'products',
+                    value: '={{ $json.body.config?.products ?? ["motor", "home", "travel"] }}',
+                    type: 'array',
+                },
+                {
+                    id: '5',
+                    name: 'maxFollowUps',
+                    value: '={{ $json.body.config?.maxFollowUps ?? 3 }}',
+                    type: 'number',
+                },
+                {
+                    id: '6',
                     name: 'confidenceThreshold',
-                    value: 0.7,
+                    value: '={{ $json.body.config?.confidenceThreshold ?? 0.7 }}',
                     type: 'number',
                 },
             ],
         },
-        includeOtherFields: true,
+        includeOtherFields: false,
     };
 
     @node({
-        id: 'cfb5f7a7-d8d9-452e-bee2-39d18a34c7ec',
-        webhookId: '39340647-22f2-47e3-80b4-d4a944895fde',
-        name: 'Chat Trigger',
-        type: '@n8n/n8n-nodes-langchain.chatTrigger',
-        version: 1.4,
-        position: [-250, 0],
-    })
-    ChatTrigger = {
-        public: true,
-        mode: 'hostedChat',
-        authentication: 'none',
-        options: {
-            responseMode: 'lastNode',
-        },
-    };
-
-    @node({
-        id: '6a3b0eff-ab63-4685-bd01-801fd22d9d58',
+        id: '5d10e750-0e45-4793-b66b-30ddd4df5500',
         name: 'Call Classifier Core',
         type: 'n8n-nodes-base.executeWorkflow',
         version: 1.3,
@@ -116,7 +128,7 @@ export class ComplaintsChatWorkflow {
             mappingMode: 'defineBelow',
             value: {
                 sessionId: '={{ $json.sessionId }}',
-                message: '={{ $json.chatInput }}',
+                message: '={{ $json.message }}',
                 config: '={{ { insurerName: $json.insurerName, products: $json.products, maxFollowUps: $json.maxFollowUps, confidenceThreshold: $json.confidenceThreshold } }}',
             },
             matchingColumns: [],
@@ -156,33 +168,11 @@ export class ComplaintsChatWorkflow {
     };
 
     @node({
-        id: 'de205a98-4606-4d16-89d2-7ab0ee498b68',
-        name: 'Format Chat Response',
-        type: 'n8n-nodes-base.set',
-        version: 3.5,
-        position: [500, 0],
-    })
-    FormatChatResponse = {
-        mode: 'manual',
-        assignments: {
-            assignments: [
-                {
-                    id: '1',
-                    name: 'output',
-                    value: '={{ $json.reply }}',
-                    type: 'string',
-                },
-            ],
-        },
-        includeOtherFields: false,
-    };
-
-    @node({
-        id: 'f1a2b3c4-1111-4a2b-8c3d-9e0f1a2b3c4d',
+        id: '3a8c9a10-ffbd-4570-a23d-adccf15dd0ad',
         name: 'Done Check',
         type: 'n8n-nodes-base.switch',
         version: 3.4,
-        position: [500, 250],
+        position: [500, 0],
     })
     DoneCheck = {
         mode: 'expression',
@@ -191,11 +181,11 @@ export class ComplaintsChatWorkflow {
     };
 
     @node({
-        id: 'a2b3c4d5-2222-4b3c-9d4e-0f1a2b3c4d5e',
+        id: 'ec2a0b93-b524-470a-ad1d-f7a415f6e521',
         name: 'Call Router',
         type: 'n8n-nodes-base.executeWorkflow',
         version: 1.3,
-        position: [750, 300],
+        position: [750, 150],
     })
     CallRouter = {
         source: 'database',
@@ -233,8 +223,31 @@ export class ComplaintsChatWorkflow {
             ],
         },
         options: {
-            waitForSubWorkflow: false,
+            waitForSubWorkflow: true,
         },
+    };
+
+    @node({
+        id: '53db750b-dd3e-4cee-8de0-70553f8159b7',
+        name: 'Finalize Harness Response',
+        type: 'n8n-nodes-base.code',
+        version: 2,
+        position: [1000, 150],
+    })
+    FinalizeHarnessResponse = {
+        mode: 'runOnceForAllItems',
+        language: 'javaScript',
+        jsCode: `const classifier = $('Call Classifier Core').item.json;
+const routing = $('Call Router').item.json;
+
+return [{
+  json: {
+    reply: classifier.reply,
+    done: classifier.done,
+    result: classifier.result,
+    routing,
+  },
+}];`,
     };
 
     // =====================================================================
@@ -243,10 +256,10 @@ export class ComplaintsChatWorkflow {
 
     @links()
     defineRouting() {
-        this.ChatTrigger.out(0).to(this.Config.in(0));
+        this.Webhook.out(0).to(this.Config.in(0));
         this.Config.out(0).to(this.CallClassifierCore.in(0));
-        this.CallClassifierCore.out(0).to(this.FormatChatResponse.in(0));
         this.CallClassifierCore.out(0).to(this.DoneCheck.in(0));
         this.DoneCheck.out(1).to(this.CallRouter.in(0));
+        this.CallRouter.out(0).to(this.FinalizeHarnessResponse.in(0));
     }
 }

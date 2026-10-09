@@ -1,0 +1,17 @@
+{
+  "id": "legit-angry-billing",
+  "description": "Legitimate billing-error complaint with clearly angry tone, no escalation triggers. Covers: label=legitimate, customerTone=angry, category=billing.",
+  "turns": [
+    "This is absolutely ridiculous. You people overcharged me on my home insurance premium for the THIRD time this year, it jumped from $80 to $340 a month with zero warning or explanation, two weeks ago. I want this fixed and a refund of the overcharge, now.",
+    "No policy number, and I'd rather not leave contact details."
+  ],
+  "expected": {
+    "label": "legitimate",
+    "escalate": false,
+    "customerTone": "angry",
+    "routes": ["complaints_register"],
+    "category": "billing"
+  },
+  "tags": ["label", "legitimate", "tone", "angry"],
+  "reviewed": true
+}
